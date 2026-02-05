@@ -1,11 +1,30 @@
 {
     "camera": {
         "required": true,
-        "description": "For profile photo"
+        "description": "To take photos or record videos within the app, e.g., profile picture or uploads."
     },
-    "location": true,
-    "microphone": true,
-    "photos": false,
-    "contacts": true,
-    "notifications": true
+    "location": {
+        "required": true,
+        "description": "To access your device location for maps, geotagging, and location-based features."
+    },
+    "microphone": {
+        "required": true,
+        "description": "To record audio or enable voice commands and chat functionality."
+    },
+    "photos": {
+        "required": true,
+        "description": "To access your gallery for uploading images or selecting media files."
+    },
+    "contacts": {
+        "required": true,
+        "description": "To read your contacts for sharing, invitations, or syncing address book data."
+    },
+    "notifications": {
+        "required": true,
+        "description": "To send push notifications, reminders, alerts, and app updates."
+    },
+    "bluetooth": {
+        "required": true,
+        "description": "To connect and communicate with nearby Bluetooth devices, e.g., wearables or accessories."
+    }
 }

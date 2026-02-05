@@ -46,12 +46,14 @@
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
 		<key>NSCameraUsageDescription</key>
-		<string>For profile photo</string>
+		<string>To take photos or record videos within the app, e.g., profile picture or uploads.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>This app needs access to location when in use.</string>
+		<string>To access your device location for maps, geotagging, and location-based features.</string>
 		<key>NSMicrophoneUsageDescription</key>
-		<string>This app needs access to the microphone.</string>
+		<string>To record audio or enable voice commands and chat functionality.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>To access your gallery for uploading images or selecting media files.</string>
 		<key>NSContactsUsageDescription</key>
-		<string>This app needs access to your contacts.</string>
+		<string>To read your contacts for sharing, invitations, or syncing address book data.</string>
 	</dict>
 </plist>

@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:easy_permissions/easy_permissions.dart';
-// ignore: depend_on_referenced_packages
 import 'package:permission_handler/permission_handler.dart';
-
-// ignore_for_file: deprecated_member_use
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize with Dart Map, or load from JSON asset if preferred
-  // await EasyPermissions.initFromAsset('assets/easy_permissions.json');
-  // For this demo, we'll assume the JSON asset is loaded by the logic or we init here:
   await EasyPermissions.initFromAsset('assets/easy_permissions.json');
 
   runApp(const MyApp());
@@ -27,20 +21,23 @@ class MyApp extends StatelessWidget {
         fontFamily: 'GoogleSans',
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6C63FF), // Modern Indigo/Purple
+          seedColor: const Color(0xFF00C6FF),
           brightness: Brightness.light,
+          primary: const Color(0xFF00C6FF),
+          secondary: const Color(0xFF0072FF),
         ),
         appBarTheme: const AppBarTheme(
           centerTitle: true,
-          elevation: 0,
-          backgroundColor: Colors.transparent,
+          elevation: 12,
+          backgroundColor: Colors.white,
           titleTextStyle: TextStyle(
             color: Colors.black87,
             fontFamily: 'GoogleSans',
             fontWeight: FontWeight.bold,
-            fontSize: 20,
+            fontSize: 24,
           ),
         ),
+        scaffoldBackgroundColor: const Color(0xFFF5F7FA),
       ),
       home: const PermissionDashboard(),
     );
@@ -65,7 +62,6 @@ class _PermissionDashboardState extends State<PermissionDashboard> {
   }
 
   Future<void> _refreshStatuses() async {
-    // Check status of all managed permissions
     final results = await EasyPermissions.checkStatus();
     setState(() {
       _statuses = results;
@@ -86,121 +82,164 @@ class _PermissionDashboardState extends State<PermissionDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB), // Light grey bg
       appBar: AppBar(title: const Text("Easy Permissions")),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: _refreshStatuses,
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: [
-                  _buildHeader(),
-                  const SizedBox(height: 24),
-                  const Text(
-                    "Managed Permissions",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ..._statuses.keys.map(
-                    (key) => _buildPermissionCard(key, _statuses[key]!),
-                  ),
-
-                  const SizedBox(height: 30),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: FilledButton.icon(
-                      onPressed: _askAll,
-                      icon: const Icon(Icons.playlist_add_check),
-                      label: const Text(
-                        "Request All Enabled",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      style: FilledButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+        onRefresh: _refreshStatuses,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          children: [
+            GradientHeader(
+              icon: Icons.shield_rounded,
+              title: "Control app permissions easily with EasyPermissions",
+              gradient: const LinearGradient(
+                colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
             ),
+            const SizedBox(height: 12),
+            const Text(
+              "Your Permissions",
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ..._statuses.keys.map(
+                  (key) => PermissionCard(
+                keyName: key,
+                status: _statuses[key]!,
+                onAsk: () => _askPermission(key),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: FilledButton.icon(
+                onPressed: _askAll,
+                icon: const Icon(Icons.playlist_add_check_rounded),
+                label: const Text(
+                  "Request All",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  backgroundColor: const Color(0xFF0072FF),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
+}
 
-  Widget _buildHeader() {
+class GradientHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Gradient gradient;
+
+  const GradientHeader({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.gradient,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.shield_moon_outlined,
-            size: 48,
-            color: Theme.of(context).colorScheme.primary,
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
-          const SizedBox(height: 16),
-          Text(
-            "Manage your app permissions properly with EasyPermissions.",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
-              height: 1.5,
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 40, color: Colors.white),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              title,
+
+              textAlign: TextAlign.start,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.white,
+                height: 1.5,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildPermissionCard(String key, PermissionStatus status) {
-    final bool isGranted = status.isGranted;
-    final bool isPermanentlyDenied = status.isPermanentlyDenied;
-    final bool isEnabledInConfig = EasyPermissions.isEnabled(key);
+class PermissionCard extends StatelessWidget {
+  final String keyName;
+  final PermissionStatus status;
+  final VoidCallback onAsk;
+
+  const PermissionCard({
+    super.key,
+    required this.keyName,
+    required this.status,
+    required this.onAsk,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isGranted = status.isGranted;
+    final isPermanentlyDenied = status.isPermanentlyDenied;
+    final isEnabledInConfig = EasyPermissions.isEnabled(keyName);
 
     Color statusColor;
-    IconData statusIcon;
     String statusText;
+    IconData statusIcon;
 
     if (!isEnabledInConfig) {
-      statusColor = Colors.grey;
-      statusIcon = Icons.block;
+      statusColor = Colors.grey.shade500;
+      statusIcon = Icons.block_rounded;
       statusText = "Disabled in Config";
     } else if (isGranted) {
-      statusColor = Colors.green;
-      statusIcon = Icons.check_circle;
+      statusColor = Colors.green.shade600;
+      statusIcon = Icons.check_circle_rounded;
       statusText = "Granted";
     } else if (isPermanentlyDenied) {
-      statusColor = Colors.red;
-      statusIcon = Icons.cancel;
+      statusColor = Colors.red.shade600;
+      statusIcon = Icons.cancel_rounded;
       statusText = "Denied Forever";
     } else {
-      statusColor = Colors.orange;
-      statusIcon = Icons.info;
+      statusColor = Colors.orange.shade600;
+      statusIcon = Icons.info_rounded;
       statusText = "Not Granted";
     }
 
     return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.withOpacity(0.1)),
-      ),
-      color: Colors.white,
+      elevation: 3,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shadowColor: Colors.black.withOpacity(0.05),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -208,10 +247,10 @@ class _PermissionDashboardState extends State<PermissionDashboard> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
+                color: statusColor.withOpacity(0.15),
                 shape: BoxShape.circle,
               ),
-              child: Icon(_getIconForKey(key), color: statusColor),
+              child: Icon(_getIconForKey(keyName), color: statusColor,size: 16,),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -219,25 +258,23 @@ class _PermissionDashboardState extends State<PermissionDashboard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _capitalize(key),
+                    _capitalize(keyName),
                     style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(statusIcon, size: 14, color: statusColor),
+                      Icon(statusIcon, size: 12, color: statusColor),
                       const SizedBox(width: 4),
                       Text(
                         statusText,
                         style: TextStyle(
-                          fontSize: 12,
-                          color: statusColor,
-                          fontWeight: FontWeight.w500,
-                        ),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: statusColor),
                       ),
                     ],
                   ),
@@ -246,7 +283,14 @@ class _PermissionDashboardState extends State<PermissionDashboard> {
             ),
             if (isEnabledInConfig && !isGranted)
               TextButton(
-                onPressed: () => _askPermission(key),
+                onPressed: onAsk,
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF0072FF),
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12
+                  ),
+                ),
                 child: const Text("Ask"),
               ),
           ],
@@ -258,21 +302,19 @@ class _PermissionDashboardState extends State<PermissionDashboard> {
   IconData _getIconForKey(String key) {
     switch (key.toLowerCase()) {
       case 'camera':
-        return Icons.camera_alt;
+        return Icons.camera_alt_rounded;
       case 'location':
-        return Icons.location_on;
+        return Icons.location_on_rounded;
       case 'microphone':
-        return Icons.mic;
+        return Icons.mic_rounded;
       case 'photos':
-        return Icons.photo;
+        return Icons.photo_library_rounded;
       case 'contacts':
-        return Icons.contacts;
+        return Icons.contacts_rounded;
       case 'notifications':
-        return Icons.notifications;
-      case 'bluetooth':
-        return Icons.bluetooth;
+        return Icons.notifications_active_rounded;
       default:
-        return Icons.security;
+        return Icons.security_rounded;
     }
   }
 
