@@ -1,0 +1,8 @@
+{
+    "camera": true,
+    "location": true,
+    "microphone": false,
+    "photos": false,
+    "contacts": false,
+    "notifications": true
+}
