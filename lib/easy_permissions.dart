@@ -44,8 +44,13 @@ class EasyPermissions {
       if (isEnabled(key)) {
         final permission = _getPermissionFromString(key);
         if (permission != null) {
-          final status = await permission.request();
-          results[key] = status;
+          try {
+            final status = await permission.request();
+            results[key] = status;
+          } catch (e) {
+            _logWarning("Failed to request permission '$key': $e");
+            results[key] = PermissionStatus.denied;
+          }
         } else {
           _logWarning("Unknown permission key in config: $key");
         }
@@ -75,7 +80,12 @@ class EasyPermissions {
       _logError("Invalid permission key: $permission");
       return PermissionStatus.denied;
     }
-    return await perm.request();
+    try {
+      return await perm.request();
+    } catch (e) {
+      _logWarning("Failed to request permission '$permission': $e");
+      return PermissionStatus.denied;
+    }
   }
 
   /// Check status of all enabled permissions
@@ -85,8 +95,13 @@ class EasyPermissions {
       if (isEnabled(key)) {
         final permission = _getPermissionFromString(key);
         if (permission != null) {
-          final status = await permission.status;
-          results[key] = status;
+          try {
+            final status = await permission.status;
+            results[key] = status;
+          } catch (e) {
+            _logWarning("Failed to check status for '$key': $e");
+            results[key] = PermissionStatus.denied;
+          }
         }
       }
     }
@@ -97,7 +112,12 @@ class EasyPermissions {
   static Future<PermissionStatus> checkPermission(String permission) async {
     final perm = _getPermissionFromString(permission);
     if (perm == null) return PermissionStatus.denied;
-    return await perm.status;
+    try {
+      return await perm.status;
+    } catch (e) {
+      _logWarning("Failed to check status for '$permission': $e");
+      return PermissionStatus.denied;
+    }
   }
 
   static Permission? _getPermissionFromString(String key) {

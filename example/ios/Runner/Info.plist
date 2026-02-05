@@ -55,5 +55,7 @@
 		<string>To access your gallery for uploading images or selecting media files.</string>
 		<key>NSContactsUsageDescription</key>
 		<string>To read your contacts for sharing, invitations, or syncing address book data.</string>
+		<key>NSBluetoothAlwaysUsageDescription</key>
+		<string>To connect and communicate with nearby Bluetooth devices, e.g., wearables or accessories.</string>
 	</dict>
 </plist>

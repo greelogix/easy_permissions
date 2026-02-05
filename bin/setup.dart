@@ -5,7 +5,7 @@ import 'package:path/path.dart' as p;
 
 // ignore_for_file: avoid_print
 
-const Map<String, Map<String, String>> permissionMappings = {
+const Map<String, Map<String, dynamic>> permissionMappings = {
   'camera': {
     'android': 'android.permission.CAMERA',
     'ios_key': 'NSCameraUsageDescription',
@@ -37,6 +37,16 @@ const Map<String, Map<String, String>> permissionMappings = {
     'ios_key':
         'N/A', // iOS notifications are largely code-based, but could use UNUserNotificationCenter
     'ios_msg': 'N/A',
+  },
+  'bluetooth': {
+    'android': [
+      'android.permission.BLUETOOTH',
+      'android.permission.BLUETOOTH_ADMIN',
+      'android.permission.BLUETOOTH_SCAN',
+      'android.permission.BLUETOOTH_CONNECT',
+    ],
+    'ios_key': 'NSBluetoothAlwaysUsageDescription',
+    'ios_msg': 'This app needs access to Bluetooth.',
   },
 };
 
@@ -112,36 +122,53 @@ Future<void> _processAndroid(Map<String, dynamic> config) async {
     if (isEnabled) {
       final mapping = permissionMappings[key];
       if (mapping != null && mapping['android'] != null) {
-        final androidPerm = mapping['android']!;
+        final rawAndroid = mapping['android'];
+        List<String> androidPerms = [];
+        if (rawAndroid is String) {
+          androidPerms.add(rawAndroid);
+        } else if (rawAndroid is List) {
+          androidPerms.addAll(rawAndroid.cast<String>());
+        }
 
-        // Check if exists
-        bool exists = manifestNode.findElements('uses-permission').any((node) {
-          return node.getAttribute('android:name') == androidPerm;
-        });
+        for (final androidPerm in androidPerms) {
+          // Check if exists
+          bool exists = manifestNode.findElements('uses-permission').any((node) {
+            return node.getAttribute('android:name') == androidPerm;
+          });
 
-        if (!exists) {
-          print('➕ Adding Android Permission: $androidPerm');
-          final builder = XmlBuilder();
-          builder.element(
-            'uses-permission',
-            attributes: {'android:name': androidPerm},
-          );
-          manifestNode.children.add(builder.buildFragment());
-          modified = true;
+          if (!exists) {
+            print('➕ Adding Android Permission: $androidPerm');
+            final builder = XmlBuilder();
+            builder.element(
+              'uses-permission',
+              attributes: {'android:name': androidPerm},
+            );
+            manifestNode.children.add(builder.buildFragment());
+            modified = true;
+          }
         }
       }
     } else if (value == false || (value is Map && value['required'] != true)) {
       // Check for unused permission
       final mapping = permissionMappings[key];
       if (mapping != null && mapping['android'] != null) {
-        final androidPerm = mapping['android']!;
-        bool exists = manifestNode.findElements('uses-permission').any((node) {
-          return node.getAttribute('android:name') == androidPerm;
-        });
-        if (exists) {
-          logWarningBold(
-            'Unused Permission Detected! $androidPerm exists in AndroidManifest.xml but is set to false in JSON.',
-          );
+        final rawAndroid = mapping['android'];
+        List<String> androidPerms = [];
+        if (rawAndroid is String) {
+          androidPerms.add(rawAndroid);
+        } else if (rawAndroid is List) {
+          androidPerms.addAll(rawAndroid.cast<String>());
+        }
+
+        for (final androidPerm in androidPerms) {
+          bool exists = manifestNode.findElements('uses-permission').any((node) {
+            return node.getAttribute('android:name') == androidPerm;
+          });
+          if (exists) {
+            logWarningBold(
+              'Unused Permission Detected! $androidPerm exists in AndroidManifest.xml but is set to false in JSON.',
+            );
+          }
         }
       }
     }
