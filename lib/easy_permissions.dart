@@ -3,6 +3,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
+export 'package:permission_handler/permission_handler.dart';
 import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
