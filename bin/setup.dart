@@ -12,7 +12,8 @@ const Map<String, Map<String, String>> permissionMappings = {
     'ios_msg': 'This app needs access to the camera.',
   },
   'location': {
-    'android': 'android.permission.ACCESS_FINE_LOCATION', // Defaulting to fine, maybe add coarse too
+    'android':
+        'android.permission.ACCESS_FINE_LOCATION', // Defaulting to fine, maybe add coarse too
     'ios_key': 'NSLocationWhenInUseUsageDescription',
     'ios_msg': 'This app needs access to location when in use.',
   },
@@ -33,8 +34,9 @@ const Map<String, Map<String, String>> permissionMappings = {
   },
   'notifications': {
     'android': 'android.permission.POST_NOTIFICATIONS',
-    'ios_key': 'N/A', // iOS notifications are largely code-based, but could use UNUserNotificationCenter
-    'ios_msg': 'N/A', 
+    'ios_key':
+        'N/A', // iOS notifications are largely code-based, but could use UNUserNotificationCenter
+    'ios_msg': 'N/A',
   },
 };
 
@@ -66,7 +68,13 @@ void main(List<String> args) async {
 }
 
 Future<void> _processAndroid(Map<String, dynamic> config) async {
-  final manifestPath = p.join('android', 'app', 'src', 'main', 'AndroidManifest.xml');
+  final manifestPath = p.join(
+    'android',
+    'app',
+    'src',
+    'main',
+    'AndroidManifest.xml',
+  );
   final file = File(manifestPath);
   if (!file.existsSync()) {
     logWarning('AndroidManifest.xml not found at $manifestPath');
@@ -85,45 +93,57 @@ Future<void> _processAndroid(Map<String, dynamic> config) async {
 
   final manifestNode = document.findAllElements('manifest').firstOrNull;
   if (manifestNode == null) {
-      logError('No <manifest> tag found in AndroidManifest.xml');
-      return;
+    logError('No <manifest> tag found in AndroidManifest.xml');
+    return;
   }
 
   bool modified = false;
 
   config.forEach((key, value) {
+    bool isEnabled = false;
     if (value == true) {
+      isEnabled = true;
+    } else if (value is String && value.isNotEmpty) {
+      isEnabled = true;
+    } else if (value is Map && value['required'] == true) {
+      isEnabled = true;
+    }
+
+    if (isEnabled) {
       final mapping = permissionMappings[key];
       if (mapping != null && mapping['android'] != null) {
         final androidPerm = mapping['android']!;
-        
+
         // Check if exists
         bool exists = manifestNode.findElements('uses-permission').any((node) {
-            return node.getAttribute('android:name') == androidPerm;
+          return node.getAttribute('android:name') == androidPerm;
         });
 
         if (!exists) {
-           print('➕ Adding Android Permission: $androidPerm');
-           final builder = XmlBuilder();
-           builder.element('uses-permission', attributes: {'android:name': androidPerm});
-           // Insert before application tag usually, or at end of manifest children
-           // Simpler: Just add to manifestNode
-           manifestNode.children.add(builder.buildFragment());
-           modified = true;
+          print('➕ Adding Android Permission: $androidPerm');
+          final builder = XmlBuilder();
+          builder.element(
+            'uses-permission',
+            attributes: {'android:name': androidPerm},
+          );
+          manifestNode.children.add(builder.buildFragment());
+          modified = true;
         }
       }
-    } else if (value == false) {
-       // Check for unused permission
-       final mapping = permissionMappings[key];
-       if (mapping != null && mapping['android'] != null) {
-          final androidPerm = mapping['android']!;
-          bool exists = manifestNode.findElements('uses-permission').any((node) {
-            return node.getAttribute('android:name') == androidPerm;
+    } else if (value == false || (value is Map && value['required'] != true)) {
+      // Check for unused permission
+      final mapping = permissionMappings[key];
+      if (mapping != null && mapping['android'] != null) {
+        final androidPerm = mapping['android']!;
+        bool exists = manifestNode.findElements('uses-permission').any((node) {
+          return node.getAttribute('android:name') == androidPerm;
         });
         if (exists) {
-            logWarningBold('Unused Permission Detected! $androidPerm exists in AndroidManifest.xml but is set to false in JSON.');
+          logWarningBold(
+            'Unused Permission Detected! $androidPerm exists in AndroidManifest.xml but is set to false in JSON.',
+          );
         }
-       }
+      }
     }
   });
 
@@ -145,11 +165,11 @@ Future<void> _processIOS(Map<String, dynamic> config) async {
 
   print('Processing Info.plist...');
   String content = file.readAsStringSync();
-  
+
   // Plist is messy to parse with XML package because it's key-value pairs in a dict.
   // We can treat it as text or try to parse carefully.
   // Using XML is safer.
-   XmlDocument document;
+  XmlDocument document;
   try {
     document = XmlDocument.parse(content);
   } catch (e) {
@@ -158,75 +178,102 @@ Future<void> _processIOS(Map<String, dynamic> config) async {
   }
 
   final dict = document.findAllElements('dict').firstOrNull;
-   if (dict == null) {
-      logError('No root <dict> tag found in Info.plist');
-      return;
+  if (dict == null) {
+    logError('No root <dict> tag found in Info.plist');
+    return;
   }
 
   bool modified = false;
 
-    config.forEach((key, value) {
+  config.forEach((key, value) {
+    bool isEnabled = false;
+    String? customDesc;
+
     if (value == true) {
+      isEnabled = true;
+    } else if (value is String && value.isNotEmpty) {
+      isEnabled = true;
+      customDesc = value;
+    } else if (value is Map && value['required'] == true) {
+      isEnabled = true;
+      customDesc = value['description'];
+    }
+
+    if (isEnabled) {
       final mapping = permissionMappings[key];
-      if (mapping != null && mapping['ios_key'] != null && mapping['ios_key'] != 'N/A') {
+      if (mapping != null &&
+          mapping['ios_key'] != null &&
+          mapping['ios_key'] != 'N/A') {
         final iosKey = mapping['ios_key']!;
-        final iosMsg = mapping['ios_msg']!;
+        // Use custom string if available, otherwise default
+        final iosMsg = customDesc ?? mapping['ios_msg']!;
 
         // Check if key exists in the dict
         // The structure is <key>Name</key><string>Value</string>
         bool exists = false;
         final children = dict.children;
-        for (int i=0; i<children.length; i++) {
-             if (children[i] is XmlElement && (children[i] as XmlElement).name.local == 'key') {
-                 if ((children[i] as XmlElement).innerText == iosKey) {
-                     exists = true;
-                     break;
-                 }
-             }
+
+        for (int i = 0; i < children.length; i++) {
+          if (children[i] is XmlElement &&
+              (children[i] as XmlElement).name.local == 'key') {
+            if ((children[i] as XmlElement).innerText == iosKey) {
+              exists = true;
+              break;
+            }
+          }
         }
 
         if (!exists) {
-            print('➕ Adding iOS Key: $iosKey');
-             // We need to add <key>...</key> and <string>...</string>
-             // XML builder
-            final builder = XmlBuilder();
-            builder.element('key', nest: () => builder.text(iosKey));
-            builder.element('string', nest: () => builder.text(iosMsg));
-            
-            // Add to end of dict
-            dict.children.add(builder.buildFragment());
-            modified = true;
+          print('➕ Adding iOS Key: $iosKey with description: "$iosMsg"');
+          // We need to add <key>...</key> and <string>...</string>
+          // XML builder
+          final builder = XmlBuilder();
+          builder.element('key', nest: () => builder.text(iosKey));
+          builder.element('string', nest: () => builder.text(iosMsg));
+
+          // Add to end of dict
+          dict.children.add(builder.buildFragment());
+          modified = true;
+        } else {
+          // Optional: Update description if it differs?
+          // Not strictly requested but nice to have.
+          // Finding the value node (next sibling usually) is hard with just XML iteration if there are whitespaces.
+          // Let's stick to "Add missing".
         }
       }
-    } else if (value == false) {
-       // Check for unused
-        final mapping = permissionMappings[key];
-        if (mapping != null && mapping['ios_key'] != null && mapping['ios_key'] != 'N/A') {
-             final iosKey = mapping['ios_key']!;
-              bool exists = false;
-                final children = dict.children;
-                for (int i=0; i<children.length; i++) {
-                    if (children[i] is XmlElement && (children[i] as XmlElement).name.local == 'key') {
-                        if ((children[i] as XmlElement).innerText == iosKey) {
-                            exists = true;
-                            break;
-                        }
-                    }
-                }
-             if (exists) {
-                  logWarningBold('Unused Permission Detected! $iosKey exists in Info.plist but is set to false in JSON.');
-             }
+    } else {
+      // Check for unused
+      final mapping = permissionMappings[key];
+      if (mapping != null &&
+          mapping['ios_key'] != null &&
+          mapping['ios_key'] != 'N/A') {
+        final iosKey = mapping['ios_key']!;
+        bool exists = false;
+        final children = dict.children;
+        for (int i = 0; i < children.length; i++) {
+          if (children[i] is XmlElement &&
+              (children[i] as XmlElement).name.local == 'key') {
+            if ((children[i] as XmlElement).innerText == iosKey) {
+              exists = true;
+              break;
+            }
+          }
         }
+        if (exists) {
+          logWarningBold(
+            'Unused Permission Detected! $iosKey exists in Info.plist but is set to false in JSON.',
+          );
+        }
+      }
     }
   });
 
   if (modified) {
     file.writeAsStringSync(document.toXmlString(pretty: true, indent: '\t'));
-     print('✅ Info.plist updated.');
+    print('✅ Info.plist updated.');
   } else {
     print('No changes needed for Info.plist.');
   }
-
 }
 
 void logError(String msg) {

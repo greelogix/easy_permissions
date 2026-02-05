@@ -1,5 +1,8 @@
 {
-    "camera": true,
+    "camera": {
+        "required": true,
+        "description": "For profile photo"
+    },
     "location": true,
     "microphone": true,
     "photos": false,

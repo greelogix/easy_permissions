@@ -1,6 +1,5 @@
 // ignore_for_file: avoid_print
 
-
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -11,11 +10,11 @@ class EasyPermissions {
   factory EasyPermissions() => _instance;
   EasyPermissions._internal();
 
-  Map<String, bool> _config = {};
+  Map<String, dynamic> _config = {};
 
   /// Initialize from a Dart Map
   static void init(Map<String, dynamic> config) {
-    _instance._config = config.map((key, value) => MapEntry(key, value == true));
+    _instance._config = config;
   }
 
   /// Initialize from a JSON asset file
@@ -31,14 +30,18 @@ class EasyPermissions {
 
   /// Check if a permission is enabled in the configuration
   static bool isEnabled(String permission) {
-    return _instance._config[permission] == true;
+    final val = _instance._config[permission];
+    if (val is bool) return val;
+    if (val is String) return val.isNotEmpty;
+    if (val is Map) return val['required'] == true;
+    return false;
   }
 
   /// Request all enabled permissions
   static Future<Map<String, PermissionStatus>> ask() async {
     Map<String, PermissionStatus> results = {};
     for (var key in _instance._config.keys) {
-      if (_instance._config[key] == true) {
+      if (isEnabled(key)) {
         final permission = _getPermissionFromString(key);
         if (permission != null) {
           final status = await permission.request();
@@ -54,12 +57,16 @@ class EasyPermissions {
   /// Request a single permission
   static Future<PermissionStatus> askPermission(String permission) async {
     if (!_instance._config.containsKey(permission)) {
-       _logWarning("Permission '$permission' is not present in the configuration.");
-       return PermissionStatus.denied;
+      _logWarning(
+        "Permission '$permission' is not present in the configuration.",
+      );
+      return PermissionStatus.denied;
     }
 
-    if (_instance._config[permission] != true) {
-      _logWarning("Permission '$permission' is disabled in configuration (set to false).");
+    if (!isEnabled(permission)) {
+      _logWarning(
+        "Permission '$permission' is disabled in configuration (set to false).",
+      );
       return PermissionStatus.denied;
     }
 
@@ -74,8 +81,8 @@ class EasyPermissions {
   /// Check status of all enabled permissions
   static Future<Map<String, PermissionStatus>> checkStatus() async {
     Map<String, PermissionStatus> results = {};
-     for (var key in _instance._config.keys) {
-      if (_instance._config[key] == true) {
+    for (var key in _instance._config.keys) {
+      if (isEnabled(key)) {
         final permission = _getPermissionFromString(key);
         if (permission != null) {
           final status = await permission.status;
@@ -85,14 +92,13 @@ class EasyPermissions {
     }
     return results;
   }
-  
-   /// Check status for one permission
-  static Future<PermissionStatus> checkPermission(String permission) async {
-      final perm = _getPermissionFromString(permission);
-      if (perm == null) return PermissionStatus.denied; 
-      return await perm.status;
-  }
 
+  /// Check status for one permission
+  static Future<PermissionStatus> checkPermission(String permission) async {
+    final perm = _getPermissionFromString(permission);
+    if (perm == null) return PermissionStatus.denied;
+    return await perm.status;
+  }
 
   static Permission? _getPermissionFromString(String key) {
     switch (key.toLowerCase()) {
@@ -104,9 +110,9 @@ class EasyPermissions {
         return Permission.microphone;
       case 'photos':
       case 'storage':
-        // Note: Logic for photos/storage can be complex on Android 13+ vs below. 
+        // Note: Logic for photos/storage can be complex on Android 13+ vs below.
         // Using photos for iOS and general media.
-        return Permission.photos; 
+        return Permission.photos;
       case 'contacts':
         return Permission.contacts;
       case 'notifications':
@@ -130,7 +136,7 @@ class EasyPermissions {
   }
 
   static void _logError(String message) {
-     developer.log('\x1B[1;31m❌ [EasyPermissions] $message\x1B[0m');
-     print('\x1B[1;31m❌ [EasyPermissions] $message\x1B[0m');
+    developer.log('\x1B[1;31m❌ [EasyPermissions] $message\x1B[0m');
+    print('\x1B[1;31m❌ [EasyPermissions] $message\x1B[0m');
   }
 }

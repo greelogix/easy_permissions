@@ -46,7 +46,7 @@
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
 		<key>NSCameraUsageDescription</key>
-		<string>This app needs access to the camera.</string>
+		<string>For profile photo</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>This app needs access to location when in use.</string>
 		<key>NSMicrophoneUsageDescription</key>
