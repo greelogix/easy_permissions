@@ -57,7 +57,7 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.8"
-  easy_permissions:
+  easy_permissions_manager:
     dependency: "direct main"
     description:
       path: ".."

@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  easy_permissions:
+  easy_permissions_manager:
     path: ../
 
 dev_dependencies:

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:easy_permissions/easy_permissions.dart';
+import 'package:easy_permissions_manager/easy_permissions_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

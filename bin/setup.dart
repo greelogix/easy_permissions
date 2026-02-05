@@ -74,7 +74,7 @@ void main(List<String> args) async {
   // 2. Process iOS
   await _processIOS(config);
 
-  print('✅ Easy Permissions Setup Complete!');
+  print('✅ Easy Permissions Setup Complete! Run "flutter pub get" if needed.');
 }
 
 Future<void> _processAndroid(Map<String, dynamic> config) async {

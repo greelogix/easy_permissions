@@ -1,10 +1,10 @@
-# Easy Permissions for Flutter
+# Easy Permissions Manager for Flutter
 
-[![pub package](https://img.shields.io/pub/v/easy_permissions.svg)](https://pub.dev/packages/easy_permissions)
+[![pub package](https://img.shields.io/pub/v/easy_permissions_manager.svg)](https://pub.dev/packages/easy_permissions_manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 A robust, JSON-based permission manager for Flutter that simplifies permission handling across Android, iOS, and Web.
-**Easy Permissions** automates the tedious setup of `AndroidManifest.xml` and `Info.plist`, handles run-time requests, and provides a smart API to check and request permissions.
+**Easy Permissions Manager** automates the tedious setup of `AndroidManifest.xml` and `Info.plist`, handles run-time requests, and provides a smart API to check and request permissions.
 
 ---
 
@@ -21,11 +21,11 @@ A robust, JSON-based permission manager for Flutter that simplifies permission h
 
 ## 📦 Installation
 
-1.  Add `easy_permissions` to your `pubspec.yaml`:
+1.  Add `easy_permissions_manager` to your `pubspec.yaml`:
 
     ```yaml
     dependencies:
-      easy_permissions: ^0.0.1
+      easy_permissions_manager: ^0.0.1
     ```
 
 2.  Run `flutter pub get`.
@@ -71,7 +71,7 @@ flutter:
 Run the built-in setup command to automatically configure your native files. This will add the necessary `<uses-permission>` tags to `AndroidManifest.xml` and Usage Description keys to `Info.plist`.
 
 ```bash
-dart run easy_permissions:setup
+dart run easy_permissions_manager:setup
 ```
 
 > **Note**: You must run this command whenever you change your `easy_permissions.json` file.
@@ -84,7 +84,7 @@ dart run easy_permissions:setup
 Initialize the library in your `main()` method.
 
 ```dart
-import 'package:easy_permissions/easy_permissions.dart';
+import 'package:easy_permissions_manager/easy_permissions_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -125,7 +125,7 @@ Map<String, PermissionStatus> statuses = await EasyPermissions.checkStatus();
 ---
 
 ## 🌐 Web Support
-Permissions on the Web are handled differently than mobile. `easy_permissions` automatically detects if the app is running on Web and:
+Permissions on the Web are handled differently than mobile. `easy_permissions_manager` automatically detects if the app is running on Web and:
 *   Silences errors for unsupported permissions (like `contacts` or `bluetooth`) by returning `PermissionStatus.denied` instead of crashing.
 *   Allows supported permissions (like `camera` and `microphone`) to work normally.
 
