@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:developer' as developer;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 class EasyPermissions {
   static final EasyPermissions _instance = EasyPermissions._internal();
   factory EasyPermissions() => _instance;
@@ -42,6 +44,12 @@ class EasyPermissions {
     Map<String, PermissionStatus> results = {};
     for (var key in _instance._config.keys) {
       if (isEnabled(key)) {
+        if (kIsWeb && _isUnsupportedOnWeb(key)) {
+             // Silently deny on web to avoid noise
+             results[key] = PermissionStatus.denied;
+             continue;
+        }
+
         final permission = _getPermissionFromString(key);
         if (permission != null) {
           try {
@@ -75,6 +83,11 @@ class EasyPermissions {
       return PermissionStatus.denied;
     }
 
+    if (kIsWeb && _isUnsupportedOnWeb(permission)) {
+        _logWarning("Permission '$permission' is not supported on Web. Returning denied.");
+        return PermissionStatus.denied;
+    }
+
     final perm = _getPermissionFromString(permission);
     if (perm == null) {
       _logError("Invalid permission key: $permission");
@@ -93,6 +106,11 @@ class EasyPermissions {
     Map<String, PermissionStatus> results = {};
     for (var key in _instance._config.keys) {
       if (isEnabled(key)) {
+         if (kIsWeb && _isUnsupportedOnWeb(key)) {
+             results[key] = PermissionStatus.denied;
+             continue;
+        }
+
         final permission = _getPermissionFromString(key);
         if (permission != null) {
           try {
@@ -110,6 +128,10 @@ class EasyPermissions {
 
   /// Check status for one permission
   static Future<PermissionStatus> checkPermission(String permission) async {
+    if (kIsWeb && _isUnsupportedOnWeb(permission)) {
+        return PermissionStatus.denied;
+    }
+
     final perm = _getPermissionFromString(permission);
     if (perm == null) return PermissionStatus.denied;
     try {
@@ -118,6 +140,14 @@ class EasyPermissions {
       _logWarning("Failed to check status for '$permission': $e");
       return PermissionStatus.denied;
     }
+  }
+
+  static bool _isUnsupportedOnWeb(String key) {
+      // List of permissions known to not be supported or commonly crashing on Web
+      const unsupported = ['contacts', 'bluetooth', 'photos', 'storage', 'sensors', 'phone', 'notification'];
+      // 'notification' is tricky, but permission_handler might not support it fully on web depending on version.
+      // For this user's logs, bluetooth, photos, contacts were the issue.
+      return unsupported.contains(key.toLowerCase());
   }
 
   static Permission? _getPermissionFromString(String key) {
@@ -160,3 +190,4 @@ class EasyPermissions {
     print('\x1B[1;31m❌ [EasyPermissions] $message\x1B[0m');
   }
 }
+
