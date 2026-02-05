@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:easy_permissions/easy_permissions.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -86,61 +85,65 @@ class _PermissionDashboardState extends State<PermissionDashboard> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-        onRefresh: _refreshStatuses,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          children: [
-            GradientHeader(
-              icon: Icons.shield_rounded,
-              title: "Control app permissions easily with EasyPermissions",
-              gradient: const LinearGradient(
-                colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              "Your Permissions",
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ..._statuses.keys.map(
-                  (key) => PermissionCard(
-                keyName: key,
-                status: _statuses[key]!,
-                onAsk: () => _askPermission(key),
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: FilledButton.icon(
-                onPressed: _askAll,
-                icon: const Icon(Icons.playlist_add_check_rounded),
-                label: const Text(
-                  "Request All",
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
+              onRefresh: _refreshStatuses,
+              child: ListView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
                 ),
-                style: FilledButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                children: [
+                  const GradientHeader(
+                    icon: Icons.shield_rounded,
+                    title:
+                        "Control app permissions easily with EasyPermissions",
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                   ),
-                  backgroundColor: const Color(0xFF0072FF),
-                ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    "Your Permissions",
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ..._statuses.keys.map(
+                    (key) => PermissionCard(
+                      keyName: key,
+                      status: _statuses[key]!,
+                      onAsk: () => _askPermission(key),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: FilledButton.icon(
+                      onPressed: _askAll,
+                      icon: const Icon(Icons.playlist_add_check_rounded),
+                      label: const Text(
+                        "Request All",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: FilledButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        backgroundColor: const Color(0xFF0072FF),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -166,7 +169,7 @@ class GradientHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -239,7 +242,7 @@ class PermissionCard extends StatelessWidget {
       elevation: 3,
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      shadowColor: Colors.black.withOpacity(0.05),
+      shadowColor: Colors.black.withValues(alpha: 0.05),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -247,10 +250,14 @@ class PermissionCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.15),
+                color: statusColor.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: Icon(_getIconForKey(keyName), color: statusColor,size: 16,),
+              child: Icon(
+                _getIconForKey(keyName),
+                color: statusColor,
+                size: 16,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -260,9 +267,10 @@ class PermissionCard extends StatelessWidget {
                   Text(
                     _capitalize(keyName),
                     style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87),
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -272,9 +280,10 @@ class PermissionCard extends StatelessWidget {
                       Text(
                         statusText,
                         style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: statusColor),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: statusColor,
+                        ),
                       ),
                     ],
                   ),
@@ -288,7 +297,7 @@ class PermissionCard extends StatelessWidget {
                   foregroundColor: const Color(0xFF0072FF),
                   textStyle: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 12
+                    fontSize: 12,
                   ),
                 ),
                 child: const Text("Ask"),

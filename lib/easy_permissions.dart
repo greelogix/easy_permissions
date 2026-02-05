@@ -46,9 +46,9 @@ class EasyPermissions {
     for (var key in _instance._config.keys) {
       if (isEnabled(key)) {
         if (kIsWeb && _isUnsupportedOnWeb(key)) {
-             // Silently deny on web to avoid noise
-             results[key] = PermissionStatus.denied;
-             continue;
+          // Silently deny on web to avoid noise
+          results[key] = PermissionStatus.denied;
+          continue;
         }
 
         final permission = _getPermissionFromString(key);
@@ -85,8 +85,10 @@ class EasyPermissions {
     }
 
     if (kIsWeb && _isUnsupportedOnWeb(permission)) {
-        _logWarning("Permission '$permission' is not supported on Web. Returning denied.");
-        return PermissionStatus.denied;
+      _logWarning(
+        "Permission '$permission' is not supported on Web. Returning denied.",
+      );
+      return PermissionStatus.denied;
     }
 
     final perm = _getPermissionFromString(permission);
@@ -107,9 +109,9 @@ class EasyPermissions {
     Map<String, PermissionStatus> results = {};
     for (var key in _instance._config.keys) {
       if (isEnabled(key)) {
-         if (kIsWeb && _isUnsupportedOnWeb(key)) {
-             results[key] = PermissionStatus.denied;
-             continue;
+        if (kIsWeb && _isUnsupportedOnWeb(key)) {
+          results[key] = PermissionStatus.denied;
+          continue;
         }
 
         final permission = _getPermissionFromString(key);
@@ -130,7 +132,7 @@ class EasyPermissions {
   /// Check status for one permission
   static Future<PermissionStatus> checkPermission(String permission) async {
     if (kIsWeb && _isUnsupportedOnWeb(permission)) {
-        return PermissionStatus.denied;
+      return PermissionStatus.denied;
     }
 
     final perm = _getPermissionFromString(permission);
@@ -144,11 +146,19 @@ class EasyPermissions {
   }
 
   static bool _isUnsupportedOnWeb(String key) {
-      // List of permissions known to not be supported or commonly crashing on Web
-      const unsupported = ['contacts', 'bluetooth', 'photos', 'storage', 'sensors', 'phone', 'notification'];
-      // 'notification' is tricky, but permission_handler might not support it fully on web depending on version.
-      // For this user's logs, bluetooth, photos, contacts were the issue.
-      return unsupported.contains(key.toLowerCase());
+    // List of permissions known to not be supported or commonly crashing on Web
+    const unsupported = [
+      'contacts',
+      'bluetooth',
+      'photos',
+      'storage',
+      'sensors',
+      'phone',
+      'notification',
+    ];
+    // 'notification' is tricky, but permission_handler might not support it fully on web depending on version.
+    // For this user's logs, bluetooth, photos, contacts were the issue.
+    return unsupported.contains(key.toLowerCase());
   }
 
   static Permission? _getPermissionFromString(String key) {
@@ -191,4 +201,3 @@ class EasyPermissions {
     print('\x1B[1;31m❌ [EasyPermissions] $message\x1B[0m');
   }
 }
-

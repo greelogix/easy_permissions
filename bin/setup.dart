@@ -132,7 +132,9 @@ Future<void> _processAndroid(Map<String, dynamic> config) async {
 
         for (final androidPerm in androidPerms) {
           // Check if exists
-          bool exists = manifestNode.findElements('uses-permission').any((node) {
+          bool exists = manifestNode.findElements('uses-permission').any((
+            node,
+          ) {
             return node.getAttribute('android:name') == androidPerm;
           });
 
@@ -161,7 +163,9 @@ Future<void> _processAndroid(Map<String, dynamic> config) async {
         }
 
         for (final androidPerm in androidPerms) {
-          bool exists = manifestNode.findElements('uses-permission').any((node) {
+          bool exists = manifestNode.findElements('uses-permission').any((
+            node,
+          ) {
             return node.getAttribute('android:name') == androidPerm;
           });
           if (exists) {
