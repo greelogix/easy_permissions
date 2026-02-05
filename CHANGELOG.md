@@ -1,3 +1,8 @@
+## 0.0.2
+
+* Updated `permission_handler`, `args`, `path`, and `xml` dependencies to latest stable versions.
+* Added type-safe API `EasyPermissions.request(Permission permission)` and `EasyPermissions.check(Permission permission)`.
+
 ## 0.0.1
 
 * Initial release of EasyPermissions.

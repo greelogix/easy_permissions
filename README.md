@@ -100,8 +100,8 @@ void main() async {
 You can request a single permission or all enabled permissions at once.
 
 ```dart
-// Request a specific permission
-PermissionStatus status = await EasyPermissions.askPermission('camera');
+// Request a specific permission (Type-Safe)
+PermissionStatus status = await EasyPermissions.request(Permission.camera);
 
 if (status.isGranted) {
   // open camera
@@ -115,8 +115,8 @@ Map<String, PermissionStatus> results = await EasyPermissions.ask();
 Check the status of permissions without asking.
 
 ```dart
-// Check single
-PermissionStatus status = await EasyPermissions.checkPermission('location');
+// Check single (Type-Safe)
+PermissionStatus status = await EasyPermissions.check(Permission.location);
 
 // Check all
 Map<String, PermissionStatus> statuses = await EasyPermissions.checkStatus();

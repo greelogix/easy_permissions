@@ -68,7 +68,26 @@ class EasyPermissions {
     return results;
   }
 
-  /// Request a single permission
+  /// Request a single permission using the type-safe API
+  static Future<PermissionStatus> request(Permission permission) async {
+    final key = _getKeyFromPermission(permission);
+    if (key == null) {
+      _logWarning(
+        "Permission $permission is not supported by EasyPermissions config.",
+      );
+      return PermissionStatus.denied;
+    }
+    return askPermission(key);
+  }
+
+  /// Check status for one permission using the type-safe API
+  static Future<PermissionStatus> check(Permission permission) async {
+    final key = _getKeyFromPermission(permission);
+    if (key == null) return PermissionStatus.denied;
+    return checkPermission(key);
+  }
+
+  /// Request a single permission (String key)
   static Future<PermissionStatus> askPermission(String permission) async {
     if (!_instance._config.containsKey(permission)) {
       _logWarning(
@@ -159,6 +178,43 @@ class EasyPermissions {
     // 'notification' is tricky, but permission_handler might not support it fully on web depending on version.
     // For this user's logs, bluetooth, photos, contacts were the issue.
     return unsupported.contains(key.toLowerCase());
+  }
+
+  static String? _getKeyFromPermission(Permission permission) {
+    if (permission == Permission.camera) {
+      return 'camera';
+    }
+    if (permission == Permission.location) {
+      return 'location';
+    }
+    if (permission == Permission.microphone) {
+      return 'microphone';
+    }
+    if (permission == Permission.photos) {
+      return 'photos';
+    }
+    if (permission == Permission.contacts) {
+      return 'contacts';
+    }
+    if (permission == Permission.notification) {
+      return 'notifications';
+    }
+    if (permission == Permission.bluetooth) {
+      return 'bluetooth';
+    }
+    if (permission == Permission.phone) {
+      return 'phone';
+    }
+    if (permission == Permission.sensors) {
+      return 'sensors';
+    }
+    if (permission == Permission.storage) {
+      return 'storage';
+    }
+    if (permission == Permission.mediaLibrary) {
+      return 'photos'; // Map generic media to photos key if needed
+    }
+    return null;
   }
 
   static Permission? _getPermissionFromString(String key) {
