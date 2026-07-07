@@ -28,5 +28,17 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires access to the camera.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires access to the microphone.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app requires access to your location.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>This app requires access to your contacts.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app requires access to your photo library.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>This app requires access to bluetooth.</string>
 </dict>
 </plist>

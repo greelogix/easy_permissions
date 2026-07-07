@@ -12,10 +12,14 @@ const Map<String, Map<String, dynamic>> permissionMappings = {
     'ios_msg': 'This app needs access to the camera.',
   },
   'location': {
-    'android':
-        'android.permission.ACCESS_FINE_LOCATION', // Defaulting to fine, maybe add coarse too
+    'android': [
+      'android.permission.ACCESS_FINE_LOCATION',
+      'android.permission.ACCESS_COARSE_LOCATION',
+    ],
     'ios_key': 'NSLocationWhenInUseUsageDescription',
     'ios_msg': 'This app needs access to location when in use.',
+    'ios_always_key': 'NSLocationAlwaysUsageDescription',
+    'ios_always_msg': 'This app needs access to location always.',
   },
   'microphone': {
     'android': 'android.permission.RECORD_AUDIO',
@@ -23,19 +27,27 @@ const Map<String, Map<String, dynamic>> permissionMappings = {
     'ios_msg': 'This app needs access to the microphone.',
   },
   'photos': {
-    'android': 'android.permission.READ_MEDIA_IMAGES', // Modern Android
+    'android': [
+      'android.permission.READ_MEDIA_IMAGES',
+      'android.permission.READ_EXTERNAL_STORAGE',
+      'android.permission.WRITE_EXTERNAL_STORAGE',
+    ],
     'ios_key': 'NSPhotoLibraryUsageDescription',
     'ios_msg': 'This app needs access to your photos.',
+    'ios_add_only_key': 'NSPhotoLibraryAddUsageDescription',
+    'ios_add_only_msg': 'This app needs to add photos to your library.',
   },
   'contacts': {
-    'android': 'android.permission.READ_CONTACTS',
+    'android': [
+      'android.permission.READ_CONTACTS',
+      'android.permission.WRITE_CONTACTS',
+    ],
     'ios_key': 'NSContactsUsageDescription',
     'ios_msg': 'This app needs access to your contacts.',
   },
   'notifications': {
     'android': 'android.permission.POST_NOTIFICATIONS',
-    'ios_key':
-        'N/A', // iOS notifications are largely code-based, but could use UNUserNotificationCenter
+    'ios_key': 'N/A',
     'ios_msg': 'N/A',
   },
   'bluetooth': {
@@ -44,9 +56,82 @@ const Map<String, Map<String, dynamic>> permissionMappings = {
       'android.permission.BLUETOOTH_ADMIN',
       'android.permission.BLUETOOTH_SCAN',
       'android.permission.BLUETOOTH_CONNECT',
+      'android.permission.BLUETOOTH_ADVERTISE',
     ],
     'ios_key': 'NSBluetoothAlwaysUsageDescription',
     'ios_msg': 'This app needs access to Bluetooth.',
+    'ios_peripheral_key': 'NSBluetoothPeripheralUsageDescription',
+    'ios_peripheral_msg': 'This app needs to connect to Bluetooth peripherals.',
+  },
+  'phone': {
+    'android': [
+      'android.permission.READ_PHONE_STATE',
+      'android.permission.CALL_PHONE',
+    ],
+    'ios_key': 'N/A',
+    'ios_msg': 'N/A',
+  },
+  'sensors': {
+    'android': 'android.permission.BODY_SENSORS',
+    'ios_key': 'NSMotionUsageDescription',
+    'ios_msg': 'This app needs access to motion sensors.',
+  },
+  'storage': {
+    'android': [
+      'android.permission.READ_EXTERNAL_STORAGE',
+      'android.permission.WRITE_EXTERNAL_STORAGE',
+      'android.permission.MANAGE_EXTERNAL_STORAGE',
+    ],
+    'ios_key': 'N/A',
+    'ios_msg': 'N/A',
+  },
+  'reminders': {
+    'android': 'N/A',
+    'ios_key': 'NSRemindersUsageDescription',
+    'ios_msg': 'This app needs access to your reminders.',
+  },
+  'calendar': {
+    'android': [
+      'android.permission.READ_CALENDAR',
+      'android.permission.WRITE_CALENDAR',
+    ],
+    'ios_key': 'NSCalendarsUsageDescription',
+    'ios_msg': 'This app needs access to your calendar.',
+  },
+  'speech': {
+    'android': 'android.permission.RECORD_AUDIO',
+    'ios_key': 'NSSpeechRecognitionUsageDescription',
+    'ios_msg': 'This app needs access to speech recognition.',
+  },
+  'ignorebatteryoptimizations': {
+    'android': 'android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
+    'ios_key': 'N/A',
+    'ios_msg': 'N/A',
+  },
+  'requestinstallpackages': {
+    'android': 'android.permission.REQUEST_INSTALL_PACKAGES',
+    'ios_key': 'N/A',
+    'ios_msg': 'N/A',
+  },
+  'apptrackingtransparency': {
+    'android': 'N/A',
+    'ios_key': 'NSUserTrackingUsageDescription',
+    'ios_msg': 'This app needs to track your activity across apps and websites.',
+  },
+  'criticalalerts': {
+    'android': 'N/A',
+    'ios_key': 'N/A',
+    'ios_msg': 'N/A',
+  },
+  'accessnotificationpolicy': {
+    'android': 'android.permission.ACCESS_NOTIFICATION_POLICY',
+    'ios_key': 'N/A',
+    'ios_msg': 'N/A',
+  },
+  'activityrecognition': {
+    'android': 'android.permission.ACTIVITY_RECOGNITION',
+    'ios_key': 'NSMotionUsageDescription',
+    'ios_msg': 'This app needs access to activity recognition.',
   },
 };
 

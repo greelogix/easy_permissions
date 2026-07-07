@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:easy_permissions_manager/easy_permissions_manager.dart';
 
 void main() async {
@@ -51,7 +52,8 @@ class PermissionDashboard extends StatefulWidget {
 }
 
 class _PermissionDashboardState extends State<PermissionDashboard> {
-  Map<String, PermissionStatus> _statuses = {};
+  Map<String, PermissionResult> _statuses = {};
+  final Set<String> _loadingKeys = {};
   bool _loading = true;
 
   @override
@@ -69,12 +71,42 @@ class _PermissionDashboardState extends State<PermissionDashboard> {
   }
 
   Future<void> _askPermission(String key) async {
+    setState(() {
+      _loadingKeys.add(key);
+    });
     await EasyPermissions.askPermission(key);
-    _refreshStatuses();
+    await _refreshStatuses();
+    setState(() {
+      _loadingKeys.remove(key);
+    });
   }
 
   Future<void> _askAll() async {
     await EasyPermissions.ask();
+    _refreshStatuses();
+  }
+
+  Future<void> _openSettings() async {
+    final success = await EasyPermissions.openSettings();
+    if (!success && mounted) {
+      // Fallback for Web/Desktop
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text("Action Required"),
+          content: const Text(
+            "Automatic settings navigation is not supported on this platform.\n\n"
+            "Please manually grant the permission by clicking the lock icon in your URL bar or checking your system preferences.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("OK"),
+            ),
+          ],
+        ),
+      );
+    }
     _refreshStatuses();
   }
 
@@ -115,31 +147,64 @@ class _PermissionDashboardState extends State<PermissionDashboard> {
                   ..._statuses.keys.map(
                     (key) => PermissionCard(
                       keyName: key,
-                      status: _statuses[key]!,
+                      result: _statuses[key]!,
+                      isLoading: _loadingKeys.contains(key),
                       onAsk: () => _askPermission(key),
+                      onOpenSettings: _openSettings,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 55,
-                    child: FilledButton.icon(
-                      onPressed: _askAll,
-                      icon: const Icon(Icons.playlist_add_check_rounded),
-                      label: const Text(
-                        "Request All",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 55,
+                          child: FilledButton.icon(
+                            onPressed: _askAll,
+                            icon: const Icon(Icons.playlist_add_check_rounded),
+                            label: const Text(
+                              "Request All",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: FilledButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              backgroundColor: const Color(0xFF0072FF),
+                            ),
+                          ),
                         ),
                       ),
-                      style: FilledButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SizedBox(
+                          height: 55,
+                          child: OutlinedButton.icon(
+                            onPressed: _openSettings,
+                            icon: const Icon(Icons.settings_rounded),
+                            label: const Text(
+                              "Open Settings",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              side: const BorderSide(
+                                color: Color(0xFF0072FF),
+                                width: 2,
+                              ),
+                            ),
+                          ),
                         ),
-                        backgroundColor: const Color(0xFF0072FF),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -182,7 +247,6 @@ class GradientHeader extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-
               textAlign: TextAlign.start,
               style: const TextStyle(
                 fontSize: 14,
@@ -200,20 +264,25 @@ class GradientHeader extends StatelessWidget {
 
 class PermissionCard extends StatelessWidget {
   final String keyName;
-  final PermissionStatus status;
+  final PermissionResult result;
+  final bool isLoading;
   final VoidCallback onAsk;
+  final VoidCallback onOpenSettings;
 
   const PermissionCard({
     super.key,
     required this.keyName,
-    required this.status,
+    required this.result,
+    required this.isLoading,
     required this.onAsk,
+    required this.onOpenSettings,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isGranted = status.isGranted;
-    final isPermanentlyDenied = status.isPermanentlyDenied;
+    final isGranted = result.status.isGranted;
+    final isPermanentlyDenied = result.isPermanentlyDenied;
+    final isSupported = result.isSupported;
     final isEnabledInConfig = EasyPermissions.isEnabled(keyName);
 
     Color statusColor;
@@ -224,6 +293,10 @@ class PermissionCard extends StatelessWidget {
       statusColor = Colors.grey.shade500;
       statusIcon = Icons.block_rounded;
       statusText = "Disabled in Config";
+    } else if (!isSupported) {
+      statusColor = Colors.grey.shade500;
+      statusIcon = Icons.do_not_disturb_alt_rounded;
+      statusText = "Not Supported";
     } else if (isGranted) {
       statusColor = Colors.green.shade600;
       statusIcon = Icons.check_circle_rounded;
@@ -235,7 +308,7 @@ class PermissionCard extends StatelessWidget {
     } else {
       statusColor = Colors.orange.shade600;
       statusIcon = Icons.info_rounded;
-      statusText = "Not Granted";
+      statusText = "Ask";
     }
 
     return Card(
@@ -290,22 +363,62 @@ class PermissionCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (isEnabledInConfig && !isGranted)
-              TextButton(
-                onPressed: onAsk,
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF0072FF),
-                  textStyle: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
+            if (isLoading)
+              const Padding(
+                padding: EdgeInsets.only(right: 12.0),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
-                child: const Text("Ask"),
-              ),
+              )
+            else if (isEnabledInConfig && isSupported && !isGranted)
+              isPermanentlyDenied
+                  ? FutureBuilder<bool>(
+                      future: _canOpenSettings(),
+                      builder: (context, snapshot) {
+                        final canOpen = snapshot.data ?? true;
+                        return canOpen
+                            ? TextButton(
+                                onPressed: onOpenSettings,
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.red.shade600,
+                                  textStyle: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                child: const Text("Open Settings"),
+                              )
+                            : const SizedBox.shrink();
+                      },
+                    )
+                  : TextButton(
+                      onPressed: onAsk,
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF0072FF),
+                        textStyle: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                      child: const Text("Ask"),
+                    ),
           ],
         ),
       ),
     );
+  }
+
+  Future<bool> _canOpenSettings() async {
+    if (kIsWeb) return false;
+    if (defaultTargetPlatform == TargetPlatform.linux ||
+        defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.macOS) {
+      // On desktop, we might still try but warn the user
+      return true;
+    }
+    return true;
   }
 
   IconData _getIconForKey(String key) {

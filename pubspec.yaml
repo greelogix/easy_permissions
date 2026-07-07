@@ -1,6 +1,6 @@
 name: easy_permissions_manager
 description: A robust, JSON-based Flutter permission manager for Android, iOS, and Web. Handles configurations, UI prompts, and native setup automatically.
-version: 0.0.2
+version: 0.0.3
 homepage: https://github.com/greelogix/easy_permissions
 repository: https://github.com/greelogix/easy_permissions
 
@@ -12,14 +12,14 @@ topics:
   - setup
 
 environment:
-  sdk: ^3.10.7
+  sdk: '>=3.10.7 <4.0.0'
   flutter: ">=1.17.0"
 
 dependencies:
   flutter:
     sdk: flutter
   permission_handler: ^12.0.0
-  xml: ^6.6.1
+  xml: ^7.0.0
   args: ^2.7.0
   path: ^1.9.1
 

@@ -15,7 +15,8 @@ A robust, JSON-based permission manager for Flutter that simplifies permission h
 *   **Smart UI**: Includes helper methods to check if permissions are granted, denied, or permanently denied.
 *   **Web Support**: Gracefully handles permission checks on Web (silencing unsupported API errors).
 *   **Dependent on Permission Handler**: Exports `permission_handler` so you don't need to add it separately.
-*   **Supports**: Camera, Location, Microphone, Photos, Contacts, Notifications, Bluetooth.
+*   **Supports**: Camera, Location, Microphone, Photos, Contacts, Notifications, Bluetooth, Reminders, Calendar, Speech, Activity Recognition, etc.
+*   **Open Settings**: Add method to open app settings when permissions are permanently denied.
 
 ---
 
@@ -25,7 +26,7 @@ A robust, JSON-based permission manager for Flutter that simplifies permission h
 
     ```yaml
     dependencies:
-      easy_permissions_manager: ^0.0.1
+      easy_permissions_manager: ^0.0.3
     ```
 
 2.  Run `flutter pub get`.
@@ -101,14 +102,17 @@ You can request a single permission or all enabled permissions at once.
 
 ```dart
 // Request a specific permission (Type-Safe)
-PermissionStatus status = await EasyPermissions.request(Permission.camera);
+PermissionResult result = await EasyPermissions.request(Permission.camera);
 
-if (status.isGranted) {
+if (result.status.isGranted) {
   // open camera
+} else if (result.isPermanentlyDenied) {
+  // open app settings
+  await EasyPermissions.openSettings();
 }
 
 // Request ALL permissions defined in your config
-Map<String, PermissionStatus> results = await EasyPermissions.ask();
+Map<String, PermissionResult> results = await EasyPermissions.ask();
 ```
 
 ### Checking Status
@@ -116,10 +120,17 @@ Check the status of permissions without asking.
 
 ```dart
 // Check single (Type-Safe)
-PermissionStatus status = await EasyPermissions.check(Permission.location);
+PermissionResult result = await EasyPermissions.check(Permission.location);
 
 // Check all
-Map<String, PermissionStatus> statuses = await EasyPermissions.checkStatus();
+Map<String, PermissionResult> statuses = await EasyPermissions.checkStatus();
+```
+
+### Open App Settings
+If a permission is permanently denied, guide your user to app settings.
+
+```dart
+await EasyPermissions.openSettings();
 ```
 
 ---
