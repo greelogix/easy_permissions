@@ -1,0 +1,43 @@
+name: Easy Permissions verification
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib bin test example/lib example/test example/easy_permissions_manager_example.dart
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter test --platform chrome test/runtime_test.dart
+      - run: flutter test
+        working-directory: example
+      - run: dart pub publish --dry-run
+      - run: dart pub global activate pana 0.23.19
+      - run: dart pub global run pana --exit-code-threshold 0 .
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+        working-directory: example
+      - run: dart run easy_permissions_manager:setup
+        working-directory: example
+      - run: flutter build apk --debug
+        working-directory: example

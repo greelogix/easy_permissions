@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:easy_permissions_manager/easy_permissions_manager.dart';
 
 void main() async {
@@ -63,7 +64,8 @@ class _PermissionDashboardState extends State<PermissionDashboard> {
   }
 
   Future<void> _refreshStatuses() async {
-    final results = await EasyPermissions.checkStatus();
+    final results = await EasyPermissions.checkStatusDetailed();
+    if (!mounted) return;
     setState(() {
       _statuses = results;
       _loading = false;
@@ -74,15 +76,16 @@ class _PermissionDashboardState extends State<PermissionDashboard> {
     setState(() {
       _loadingKeys.add(key);
     });
-    await EasyPermissions.askPermission(key);
+    await EasyPermissions.askPermissionDetailed(key);
     await _refreshStatuses();
+    if (!mounted) return;
     setState(() {
       _loadingKeys.remove(key);
     });
   }
 
   Future<void> _askAll() async {
-    await EasyPermissions.ask();
+    await EasyPermissions.askDetailed();
     _refreshStatuses();
   }
 

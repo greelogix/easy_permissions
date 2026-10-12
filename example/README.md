@@ -1,16 +1,19 @@
-# example
+# Easy Permissions Manager example
 
-A new Flutter project.
+Use current stable Flutter for native builds. The package requires Dart 3.11+.
 
-## Getting Started
+```sh
+flutter pub get
+dart run easy_permissions_manager:setup --dry-run
+dart run easy_permissions_manager:setup
+flutter analyze
+flutter test
+flutter run
+```
 
-This project is a starting point for a Flutter application.
+The dashboard uses the additive detailed API to show unsupported permissions.
+Android uses the current Flutter native Gradle template. iOS uses Swift Package Manager.
+Permission grants and denial prompts require a physical device or suitable browser.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Android example: API 37.0 compilation, minimum Android API 24.
+iOS example: iOS 15 or later.

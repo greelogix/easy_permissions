@@ -6,388 +6,257 @@ import 'package:permission_handler/permission_handler.dart';
 export 'package:permission_handler/permission_handler.dart';
 import 'dart:developer' as developer;
 
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
-
-export 'permission_result.dart';
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'src/configuration.dart';
 import 'permission_result.dart';
+export 'permission_result.dart';
 
+/// Configures, checks, and requests permissions through permission_handler.
 class EasyPermissions {
   static final EasyPermissions _instance = EasyPermissions._internal();
+
+  /// Returns the shared permission manager.
   factory EasyPermissions() => _instance;
   EasyPermissions._internal();
 
   Map<String, dynamic> _config = {};
 
-  /// Initialize from a Dart Map
+  // ─── Initialisation ────────────────────────────────────────────────────────
+
+  /// Initialize from a Dart [Map].
   static void init(Map<String, dynamic> config) {
-    _instance._config = config;
+    _instance._config = normalizeConfig(config);
   }
 
-  /// Initialize from a JSON asset file
+  /// Initialize from a raw JSON [String].
+  ///
+  /// Useful for testing or when config is fetched from a remote source:
+  /// ```dart
+  /// await EasyPermissions.initFromString(await http.read(Uri.parse(url)));
+  /// ```
+  static void initFromString(String jsonString) {
+    try {
+      final Map<String, dynamic> jsonMap = json.decode(jsonString);
+      init(jsonMap);
+    } catch (e) {
+      reset();
+      _logError('Failed to parse JSON string. Error: $e');
+    }
+  }
+
+  /// Initialize from a JSON asset file.
   static Future<void> initFromAsset(String path) async {
     try {
       final jsonString = await rootBundle.loadString(path);
       final Map<String, dynamic> jsonMap = json.decode(jsonString);
       init(jsonMap);
     } catch (e) {
-      _logError("Failed to load configuration from asset: $path. Error: $e");
+      reset();
+      _logError('Failed to load configuration from asset: $path. Error: $e');
     }
   }
 
-  /// Check if a permission is enabled in the configuration
-  static bool isEnabled(String permission) {
-    final val = _instance._config[permission];
-    if (val is bool) return val;
-    if (val is String) return val.isNotEmpty;
-    if (val is Map) return val['required'] == true;
-    return false;
+  /// Clear the current configuration and reset the instance to its initial
+  /// state. Useful between tests.
+  static void reset() {
+    _instance._config = {};
   }
 
-  /// Request all enabled permissions
-  static Future<Map<String, PermissionResult>> ask() async {
-    Map<String, PermissionResult> results = {};
-    for (var key in _instance._config.keys) {
-      if (isEnabled(key)) {
-        results[key] = await askPermission(key);
-      }
+  // ─── Config helpers ─────────────────────────────────────────────────────────
+
+  /// Returns `true` if [permission] is enabled in the loaded configuration.
+  static bool isEnabled(String permission) {
+    return enabledValue(_instance._config[permissionKey(permission)]);
+  }
+
+  // ─── Request ────────────────────────────────────────────────────────────────
+
+  /// Request all enabled permissions defined in the configuration.
+  static Future<Map<String, PermissionStatus>> ask() async {
+    final results = <String, PermissionStatus>{};
+    for (final key in _instance._config.keys.toList()) {
+      if (isEnabled(key)) results[key] = await askPermission(key);
     }
     return results;
   }
 
-  /// Request a single permission using the type-safe API
-  static Future<PermissionResult> request(Permission permission) async {
+  /// Request a single permission using the type-safe [Permission] API.
+  static Future<PermissionStatus> request(Permission permission) async {
     final key = _getKeyFromPermission(permission);
     if (key == null) {
       _logWarning(
-        "Permission $permission is not supported by EasyPermissions config.",
+        'Permission $permission is not supported by EasyPermissions config.',
       );
-      return PermissionResult(
-        status: PermissionStatus.restricted,
-        isPermanentlyDenied: false,
-        isSupported: false,
-      );
+      return PermissionStatus.denied;
     }
-    return askPermission(key);
+    if (!isEnabled(key) || _isUnsupportedOnCurrentPlatform(key)) {
+      return PermissionStatus.denied;
+    }
+    try {
+      return await permission.request();
+    } catch (e) {
+      _logWarning('Failed to request $permission: $e');
+      return PermissionStatus.denied;
+    }
   }
 
-  /// Check status for one permission using the type-safe API
-  static Future<PermissionResult> check(Permission permission) async {
-    final key = _getKeyFromPermission(permission);
-    if (key == null) {
-      return PermissionResult(
-        status: PermissionStatus.restricted,
-        isPermanentlyDenied: false,
-        isSupported: false,
-      );
-    }
-    return checkPermission(key);
-  }
-
-  /// Request a single permission (String key)
-  static Future<PermissionResult> askPermission(String permission) async {
+  /// Request a single permission by its string key (e.g. `'camera'`).
+  static Future<PermissionStatus> askPermission(String permission) async {
+    permission = permissionKey(permission);
     if (!_instance._config.containsKey(permission)) {
       _logWarning(
         "Permission '$permission' is not present in the configuration.",
       );
-      return PermissionResult(
-        status: PermissionStatus.denied,
-        isPermanentlyDenied: false,
-      );
+      return PermissionStatus.denied;
     }
 
     if (!isEnabled(permission)) {
       _logWarning(
         "Permission '$permission' is disabled in configuration (set to false).",
       );
-      return PermissionResult(
-        status: PermissionStatus.denied,
-        isPermanentlyDenied: false,
-      );
+      return PermissionStatus.denied;
     }
 
     if (_isUnsupportedOnCurrentPlatform(permission)) {
       _logWarning(
-        "Permission '$permission' is not supported on this platform. Returning restricted.",
+        "Permission '$permission' is not supported on Web. Returning denied.",
       );
-      return PermissionResult(
-        status: PermissionStatus.restricted,
-        isPermanentlyDenied: false,
-        isSupported: false,
-      );
-    }
-
-    // Android 12+ Bluetooth handling
-    if (permission.toLowerCase() == 'bluetooth' && defaultTargetPlatform == TargetPlatform.android) {
-      try {
-        final statuses = await [
-          Permission.bluetooth,
-          Permission.bluetoothScan,
-          Permission.bluetoothConnect,
-        ].request();
-        
-        // Aggregate results
-        bool isPermanentlyDenied = statuses.values.any((s) => s.isPermanentlyDenied);
-        bool isGranted = statuses.values.every((s) => s.isGranted);
-        
-        return PermissionResult(
-          status: isGranted ? PermissionStatus.granted : (isPermanentlyDenied ? PermissionStatus.permanentlyDenied : PermissionStatus.denied),
-          isPermanentlyDenied: isPermanentlyDenied,
-          isSupported: true,
-        );
-      } catch (e) {
-        _logWarning("Failed to request bluetooth permissions: $e");
-        return PermissionResult(
-          status: PermissionStatus.denied,
-          isPermanentlyDenied: false,
-        );
-      }
+      return PermissionStatus.denied;
     }
 
     final perm = _getPermissionFromString(permission);
     if (perm == null) {
-      _logError("Invalid permission key: $permission");
-      return PermissionResult(
-        status: PermissionStatus.restricted,
-        isPermanentlyDenied: false,
-        isSupported: false,
-      );
+      _logError('Invalid permission key: $permission');
+      return PermissionStatus.denied;
     }
     try {
-      final status = await perm.request();
-      bool isPermanentlyDenied = false;
-      try {
-        isPermanentlyDenied = status.isPermanentlyDenied;
-      } catch (_) {
-        // isPermanentlyDenied might not be supported on some platforms
-        isPermanentlyDenied = false;
+      if (!kIsWeb &&
+          defaultTargetPlatform == TargetPlatform.android &&
+          permission == 'bluetooth') {
+        return _aggregate(
+          (await [
+            Permission.bluetoothScan,
+            Permission.bluetoothConnect,
+          ].request()).values,
+        );
       }
-      return PermissionResult(
-        status: status,
-        isPermanentlyDenied: isPermanentlyDenied,
-      );
+      return await perm.request();
     } catch (e) {
       _logWarning("Failed to request permission '$permission': $e");
-      return PermissionResult(
-        status: PermissionStatus.denied,
-        isPermanentlyDenied: false,
-      );
+      return PermissionStatus.denied;
     }
   }
 
-  /// Check status of all enabled permissions
-  static Future<Map<String, PermissionResult>> checkStatus() async {
-    Map<String, PermissionResult> results = {};
-    for (var key in _instance._config.keys) {
-      if (isEnabled(key)) {
-        results[key] = await checkPermission(key);
-      }
+  // ─── Check ──────────────────────────────────────────────────────────────────
+
+  /// Check the status of a single permission using the type-safe [Permission] API.
+  static Future<PermissionStatus> check(Permission permission) async {
+    final key = _getKeyFromPermission(permission);
+    if (key == null) return PermissionStatus.denied;
+    if (_isUnsupportedOnCurrentPlatform(key)) return PermissionStatus.denied;
+    try {
+      return await permission.status;
+    } catch (e) {
+      _logWarning('Failed to check $permission: $e');
+      return PermissionStatus.denied;
+    }
+  }
+
+  /// Check the status of all enabled permissions without requesting them.
+  static Future<Map<String, PermissionStatus>> checkStatus() async {
+    final results = <String, PermissionStatus>{};
+    for (final key in _instance._config.keys.toList()) {
+      if (isEnabled(key)) results[key] = await checkPermission(key);
     }
     return results;
   }
 
-  /// Check status for one permission
-  static Future<PermissionResult> checkPermission(String permission) async {
+  /// Check the status of a single permission by its string key.
+  static Future<PermissionStatus> checkPermission(String permission) async {
+    permission = permissionKey(permission);
     if (_isUnsupportedOnCurrentPlatform(permission)) {
-      return PermissionResult(
-        status: PermissionStatus.restricted,
-        isPermanentlyDenied: false,
-        isSupported: false,
-      );
-    }
-
-    // Android 12+ Bluetooth handling
-    if (permission.toLowerCase() == 'bluetooth' && defaultTargetPlatform == TargetPlatform.android) {
-      try {
-        final bStatus = await Permission.bluetooth.status;
-        final bsStatus = await Permission.bluetoothScan.status;
-        final bcStatus = await Permission.bluetoothConnect.status;
-        
-        final statuses = [bStatus, bsStatus, bcStatus];
-        bool isPermanentlyDenied = statuses.any((s) => s.isPermanentlyDenied);
-        bool isGranted = statuses.every((s) => s.isGranted);
-        
-        return PermissionResult(
-          status: isGranted ? PermissionStatus.granted : (isPermanentlyDenied ? PermissionStatus.permanentlyDenied : PermissionStatus.denied),
-          isPermanentlyDenied: isPermanentlyDenied,
-          isSupported: true,
-        );
-      } catch (e) {
-        _logWarning("Failed to check bluetooth status: $e");
-        return PermissionResult(
-          status: PermissionStatus.denied,
-          isPermanentlyDenied: false,
-        );
-      }
+      return PermissionStatus.denied;
     }
 
     final perm = _getPermissionFromString(permission);
-    if (perm == null) {
-      return PermissionResult(
-        status: PermissionStatus.restricted,
-        isPermanentlyDenied: false,
-        isSupported: false,
-      );
-    }
+    if (perm == null) return PermissionStatus.denied;
     try {
-      final status = await perm.status;
-      bool isPermanentlyDenied = false;
-      try {
-        isPermanentlyDenied = status.isPermanentlyDenied;
-      } catch (_) {
-        // isPermanentlyDenied might not be supported on some platforms
-        isPermanentlyDenied = false;
+      if (!kIsWeb &&
+          defaultTargetPlatform == TargetPlatform.android &&
+          permission == 'bluetooth') {
+        return _aggregate(
+          await Future.wait([
+            Permission.bluetoothScan.status,
+            Permission.bluetoothConnect.status,
+          ]),
+        );
       }
-      return PermissionResult(
-        status: status,
-        isPermanentlyDenied: isPermanentlyDenied,
-      );
+      return await perm.status;
     } catch (e) {
       _logWarning("Failed to check status for '$permission': $e");
-      return PermissionResult(
-        status: PermissionStatus.denied,
-        isPermanentlyDenied: false,
-      );
+      return PermissionStatus.denied;
     }
   }
 
-  /// Open app settings for the user to manually grant permissions
+  // ─── Settings ───────────────────────────────────────────────────────────────
+
+  /// Open the device app-settings page.
+  ///
+  /// Call this when a permission is [PermissionStatus.permanentlyDenied] — the
+  /// only way to re-grant it is through the system settings screen.
+  ///
+  /// ```dart
+  /// if (status.isPermanentlyDenied) {
+  ///   await EasyPermissions.openSettings();
+  /// }
+  /// ```
   static Future<bool> openSettings() async {
+    if (kIsWeb || _isUnsupportedOnCurrentPlatform('camera')) return false;
     try {
-      // Check if platform supports opening settings
-      if (kIsWeb) {
-        _logWarning("Opening app settings is not supported natively on Web.");
-        return false;
-      }
-      if (defaultTargetPlatform == TargetPlatform.linux ||
-          defaultTargetPlatform == TargetPlatform.windows ||
-          defaultTargetPlatform == TargetPlatform.macOS) {
-        _logWarning("Opening app settings is not natively supported on desktop platforms.");
-        return false;
-      }
       return await openAppSettings();
     } catch (e) {
-      _logError("Failed to open app settings: $e");
+      _logWarning('Failed to open app settings: $e');
       return false;
     }
   }
 
+  // ─── Internal helpers ───────────────────────────────────────────────────────
+
+  /// Permissions that crash or are unsupported on the web platform.
   static bool _isUnsupportedOnCurrentPlatform(String key) {
-    if (kIsWeb) {
-      const webUnsupported = [
-        'contacts',
-        'bluetooth',
-        'photos',
-        'storage',
-        'sensors',
-        'phone',
-        'reminders',
-        'calendar',
-        'speech',
-        'ignoreBatteryOptimizations',
-        'requestInstallPackages',
-        'appTrackingTransparency',
-        'criticalAlerts',
-        'accessNotificationPolicy',
-        'activityRecognition',
-      ];
-      return webUnsupported.contains(key.toLowerCase());
+    if (!kIsWeb) {
+      return defaultTargetPlatform == TargetPlatform.macOS ||
+          defaultTargetPlatform == TargetPlatform.linux ||
+          defaultTargetPlatform == TargetPlatform.fuchsia;
     }
-    if (defaultTargetPlatform == TargetPlatform.macOS ||
-        defaultTargetPlatform == TargetPlatform.windows ||
-        defaultTargetPlatform == TargetPlatform.linux) {
-      // permission_handler doesn't fully support desktop platforms natively without heavy lifting
-      return true;
-    }
-    return false;
+    return !{
+      'camera',
+      'microphone',
+      'location',
+      'locationwheninuse',
+    }.contains(permissionKey(key));
   }
 
   static String? _getKeyFromPermission(Permission permission) {
-    if (permission == Permission.camera) {
-      return 'camera';
-    }
-    if (permission == Permission.location) {
-      return 'location';
-    }
-    if (permission == Permission.locationAlways) {
-      return 'location';
-    }
-    if (permission == Permission.locationWhenInUse) {
-      return 'location';
-    }
-    if (permission == Permission.microphone) {
-      return 'microphone';
-    }
-    if (permission == Permission.photos) {
-      return 'photos';
-    }
-    if (permission == Permission.contacts) {
-      return 'contacts';
-    }
-    if (permission == Permission.notification) {
-      return 'notifications';
-    }
-    if (permission == Permission.bluetooth) {
+    if (permission == Permission.camera) return 'camera';
+    if (permission == Permission.location) return 'location';
+    if (permission == Permission.locationAlways) return 'locationAlways';
+    if (permission == Permission.microphone) return 'microphone';
+    if (permission == Permission.photos) return 'photos';
+    if (permission == Permission.contacts) return 'contacts';
+    if (permission == Permission.notification) return 'notifications';
+    if (permission == Permission.bluetooth) return 'bluetooth';
+    if (permission == Permission.phone) return 'phone';
+    if (permission == Permission.sensors) return 'sensors';
+    if (permission == Permission.storage) return 'storage';
+    if (permission == Permission.mediaLibrary) return 'medialibrary';
+    if (permission == Permission.locationWhenInUse) return 'location';
+    if (permission == Permission.photosAddOnly) return 'photos';
+    if (permission == Permission.bluetoothScan ||
+        permission == Permission.bluetoothConnect ||
+        permission == Permission.bluetoothAdvertise) {
       return 'bluetooth';
-    }
-    if (permission == Permission.bluetoothScan) {
-      return 'bluetooth';
-    }
-    if (permission == Permission.bluetoothConnect) {
-      return 'bluetooth';
-    }
-    if (permission == Permission.bluetoothAdvertise) {
-      return 'bluetooth';
-    }
-    if (permission == Permission.phone) {
-      return 'phone';
-    }
-    if (permission == Permission.sensors) {
-      return 'sensors';
-    }
-    if (permission == Permission.storage) {
-      return 'storage';
-    }
-    if (permission == Permission.mediaLibrary) {
-      return 'photos';
-    }
-    if (permission == Permission.photosAddOnly) {
-      return 'photos';
-    }
-    if (permission == Permission.reminders) {
-      return 'reminders';
-    }
-    if (permission == Permission.calendarFullAccess) {
-      return 'calendar';
-    }
-    if (permission == Permission.calendarWriteOnly) {
-      return 'calendar';
-    }
-    if (permission == Permission.calendarFullAccess) {
-      return 'calendar';
-    }
-    if (permission == Permission.speech) {
-      return 'speech';
-    }
-    if (permission == Permission.ignoreBatteryOptimizations) {
-      return 'ignoreBatteryOptimizations';
-    }
-    if (permission == Permission.requestInstallPackages) {
-      return 'requestInstallPackages';
-    }
-    if (permission == Permission.appTrackingTransparency) {
-      return 'appTrackingTransparency';
-    }
-    if (permission == Permission.criticalAlerts) {
-      return 'criticalAlerts';
-    }
-    if (permission == Permission.accessNotificationPolicy) {
-      return 'accessNotificationPolicy';
-    }
-    if (permission == Permission.activityRecognition) {
-      return 'activityRecognition';
-    }
-    if (permission == Permission.unknown) {
-      return 'unknown';
     }
     return null;
   }
@@ -398,56 +267,100 @@ class EasyPermissions {
         return Permission.camera;
       case 'location':
         return Permission.location;
+      // Always-on background location — requires explicit config key.
+      case 'locationalways':
+        return Permission.locationAlways;
       case 'microphone':
         return Permission.microphone;
       case 'photos':
-      case 'storage':
         return Permission.photos;
+      case 'medialibrary':
+        return Permission.mediaLibrary;
+      case 'storage':
+        return Permission.storage;
       case 'contacts':
         return Permission.contacts;
       case 'notifications':
         return Permission.notification;
       case 'bluetooth':
-        // On Android 12+, we should use Bluetooth specific permissions
-        if (defaultTargetPlatform == TargetPlatform.android) {
-          // For backward compatibility, still return Permission.bluetooth, but also support individual ones
-          return Permission.bluetooth;
-        }
         return Permission.bluetooth;
       case 'phone':
         return Permission.phone;
       case 'sensors':
         return Permission.sensors;
-      case 'reminders':
-        return Permission.reminders;
-      case 'calendar':
-        return Permission.calendarFullAccess;
-      case 'speech':
-        return Permission.speech;
-      case 'ignorebatteryoptimizations':
-        return Permission.ignoreBatteryOptimizations;
-      case 'requestinstallpackages':
-        return Permission.requestInstallPackages;
-      case 'apptrackingtransparency':
-        return Permission.appTrackingTransparency;
-      case 'criticalalerts':
-        return Permission.criticalAlerts;
-      case 'accessnotificationpolicy':
-        return Permission.accessNotificationPolicy;
-      case 'activityrecognition':
-        return Permission.activityRecognition;
       default:
         return null;
     }
   }
 
+  /// Requests one permission and reports support and permanent denial separately.
+  static Future<PermissionResult> requestDetailed(Permission permission) async {
+    final key = _getKeyFromPermission(permission);
+    final status = await request(permission);
+    return _result(status, key);
+  }
+
+  /// Checks one permission without triggering an operating-system prompt.
+  static Future<PermissionResult> checkDetailed(Permission permission) async {
+    final key = _getKeyFromPermission(permission);
+    return _result(await check(permission), key);
+  }
+
+  /// Requests a configured permission and returns detailed support information.
+  static Future<PermissionResult> askPermissionDetailed(String key) async =>
+      _result(await askPermission(key), key);
+
+  /// Checks a permission and returns detailed support information.
+  static Future<PermissionResult> checkPermissionDetailed(String key) async =>
+      _result(await checkPermission(key), key);
+
+  /// Requests all enabled permissions with detailed results.
+  static Future<Map<String, PermissionResult>> askDetailed() async =>
+      (await ask()).map((key, status) => MapEntry(key, _result(status, key)));
+
+  /// Checks all enabled permissions with detailed results.
+  static Future<Map<String, PermissionResult>> checkStatusDetailed() async =>
+      (await checkStatus()).map(
+        (key, status) => MapEntry(key, _result(status, key)),
+      );
+
+  static PermissionResult _result(PermissionStatus status, String? key) =>
+      PermissionResult(
+        status: status,
+        isPermanentlyDenied: status.isPermanentlyDenied,
+        isSupported:
+            key != null &&
+            _getPermissionFromString(key) != null &&
+            !_isUnsupportedOnCurrentPlatform(key),
+      );
+
+  static PermissionStatus _aggregate(Iterable<PermissionStatus> statuses) {
+    final values = statuses.toList();
+    if (values.isEmpty) return PermissionStatus.denied;
+    if (values.every((status) => status.isGranted)) {
+      return PermissionStatus.granted;
+    }
+    if (values.any((status) => status.isPermanentlyDenied)) {
+      return PermissionStatus.permanentlyDenied;
+    }
+    return PermissionStatus.denied;
+  }
+
   static void _logWarning(String message) {
-    developer.log('\x1B[1;33m⚠️ [EasyPermissions] $message\x1B[0m');
-    print('\x1B[1;33m⚠️ [EasyPermissions] $message\x1B[0m');
+    developer.log(
+      '⚠️ [EasyPermissions] $message',
+      name: 'EasyPermissions',
+      level: 900,
+    );
+    if (kIsWeb) print('⚠️ [EasyPermissions] $message');
   }
 
   static void _logError(String message) {
-    developer.log('\x1B[1;31m❌ [EasyPermissions] $message\x1B[0m');
-    print('\x1B[1;31m❌ [EasyPermissions] $message\x1B[0m');
+    developer.log(
+      '❌ [EasyPermissions] $message',
+      name: 'EasyPermissions',
+      level: 1000,
+    );
+    if (kIsWeb) print('❌ [EasyPermissions] $message');
   }
 }

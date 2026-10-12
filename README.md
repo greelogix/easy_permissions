@@ -15,18 +15,19 @@ A robust, JSON-based permission manager for Flutter that simplifies permission h
 *   **Smart UI**: Includes helper methods to check if permissions are granted, denied, or permanently denied.
 *   **Web Support**: Gracefully handles permission checks on Web (silencing unsupported API errors).
 *   **Dependent on Permission Handler**: Exports `permission_handler` so you don't need to add it separately.
-*   **Supports**: Camera, Location, Microphone, Photos, Contacts, Notifications, Bluetooth, Reminders, Calendar, Speech, Activity Recognition, etc.
-*   **Open Settings**: Add method to open app settings when permissions are permanently denied.
+*   **Supports**: Camera, Location, Microphone, Photos, Contacts, Notifications, Bluetooth.
 
 ---
 
 ## 📦 Installation
 
+Requires Dart 3.11+ and Flutter 3.24+; use current stable Flutter for the example builds.
+
 1.  Add `easy_permissions_manager` to your `pubspec.yaml`:
 
     ```yaml
     dependencies:
-      easy_permissions_manager: ^0.0.3
+      easy_permissions_manager: ^0.0.4
     ```
 
 2.  Run `flutter pub get`.
@@ -69,6 +70,12 @@ flutter:
 ```
 
 ### 3. Run Setup Tool
+
+Inspect changes first with `dart run easy_permissions_manager:setup --dry-run`.
+Use `--config <path>` for another JSON file, and `--remove-unused` to remove
+explicitly disabled permissions. Shared declarations required by an enabled
+permission are preserved. Configuration keys are case insensitive.
+
 Run the built-in setup command to automatically configure your native files. This will add the necessary `<uses-permission>` tags to `AndroidManifest.xml` and Usage Description keys to `Info.plist`.
 
 ```bash
@@ -102,17 +109,14 @@ You can request a single permission or all enabled permissions at once.
 
 ```dart
 // Request a specific permission (Type-Safe)
-PermissionResult result = await EasyPermissions.request(Permission.camera);
+PermissionStatus status = await EasyPermissions.request(Permission.camera);
 
-if (result.status.isGranted) {
+if (status.isGranted) {
   // open camera
-} else if (result.isPermanentlyDenied) {
-  // open app settings
-  await EasyPermissions.openSettings();
 }
 
 // Request ALL permissions defined in your config
-Map<String, PermissionResult> results = await EasyPermissions.ask();
+Map<String, PermissionStatus> results = await EasyPermissions.ask();
 ```
 
 ### Checking Status
@@ -120,20 +124,50 @@ Check the status of permissions without asking.
 
 ```dart
 // Check single (Type-Safe)
-PermissionResult result = await EasyPermissions.check(Permission.location);
+PermissionStatus status = await EasyPermissions.check(Permission.location);
 
 // Check all
-Map<String, PermissionResult> statuses = await EasyPermissions.checkStatus();
-```
-
-### Open App Settings
-If a permission is permanently denied, guide your user to app settings.
-
-```dart
-await EasyPermissions.openSettings();
+Map<String, PermissionStatus> statuses = await EasyPermissions.checkStatus();
 ```
 
 ---
+
+## Detailed results
+
+The existing methods continue to return `PermissionStatus` for compatibility.
+Use the additive detailed API to distinguish unsupported platforms:
+
+```dart
+final result = await EasyPermissions.requestDetailed(Permission.camera);
+if (!result.isSupported) {
+  // Offer an alternative for this platform.
+} else if (result.isPermanentlyDenied) {
+  await EasyPermissions.openSettings();
+}
+```
+
+`askDetailed`, `checkDetailed`, `askPermissionDetailed`,
+`checkPermissionDetailed`, and `checkStatusDetailed` are also available.
+
+Background location needs an explicit `locationAlways` configuration entry.
+Typed Bluetooth scan/connect/advertise requests retain the exact native
+permission; the `bluetooth` string key aggregates Android scan and connect.
+Storage requests are kept distinct from photo-library requests. On Android 13+
+use photo access for images; legacy storage permission is not a media-access substitute.
+
+## Android integration
+
+The current permission_handler Android backend requires API 37 compilation
+and Android API 24 or later. The example configures the installed `android-37.0`
+platform explicitly for the app and permission plugin.
+
+## iOS integration
+
+Current permission_handler supports Swift Package Manager and discovers enabled
+permissions from Info.plist. The setup command adds usage descriptions; keep
+these descriptions accurate for your application. CocoaPods consumers must also
+configure the permission_handler `PERMISSION_*` preprocessor definitions in the
+Podfile as described in its documentation. The example uses Swift Package Manager.
 
 ## 🌐 Web Support
 Permissions on the Web are handled differently than mobile. `easy_permissions_manager` automatically detects if the app is running on Web and:
@@ -164,4 +198,11 @@ The JSON configuration supports simple booleans or detailed objects.
 ## ❤️ Contributing
 Contributions are welcome! If you find a bug or want a feature, please open an issue.
 
-maintained by [GreeLogix](https://github.com/greelogix).
+Maintained by [Greelogix](https://greelogix.com),
+[Bilal Imran (@bilalatgreelogix)](https://github.com/bilalatgreelogix),
+[bilal.imran@greelogix.com](mailto:bilal.imran@greelogix.com).
+Published under the verified `greelogix.com` publisher.
+
+Permission prompts remain controlled by the operating system and browser.
+macOS and Linux return unsupported results because permission_handler has no backend for them.
+On web, only camera, microphone, and foreground location requests are attempted.
