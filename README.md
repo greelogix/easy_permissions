@@ -27,7 +27,7 @@ Requires Dart 3.11+ and Flutter 3.24+; use current stable Flutter for the exampl
 
     ```yaml
     dependencies:
-      easy_permissions_manager: ^0.0.5
+      easy_permissions_manager: ^0.0.6
     ```
 
 2.  Run `flutter pub get`.
@@ -201,3 +201,13 @@ Contributions are welcome! If you find a bug or want a feature, please open an i
 Permission prompts remain controlled by the operating system and browser.
 macOS and Linux return unsupported results because permission_handler has no backend for them.
 On web, only camera, microphone, and foreground location requests are attempted.
+
+## Maintained By [#](https://pub.dev/packages/easy_permissions_manager#maintained-by)
+
+**GreeLogix** — Flutter, Laravel & AI Development Agency
+
+GreeLogix builds Flutter applications, Laravel backends, and AI-powered products,
+and maintains reusable packages that help developers build better software.
+
+🌐 [https://greelogix.com](https://greelogix.com)\
+📩 [hello@greelogix.com](mailto:hello@greelogix.com)

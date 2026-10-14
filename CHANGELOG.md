@@ -1,3 +1,7 @@
+## 0.0.6
+
+- Add a GreeLogix agency description and company contact details to the README.
+
 ## 0.0.5
 
 - Remove the README maintainer section and personal contact details.
