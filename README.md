@@ -27,7 +27,7 @@ Requires Dart 3.11+ and Flutter 3.24+; use current stable Flutter for the exampl
 
     ```yaml
     dependencies:
-      easy_permissions_manager: ^0.0.6
+      easy_permissions_manager: ^0.0.7
     ```
 
 2.  Run `flutter pub get`.
@@ -206,8 +206,7 @@ On web, only camera, microphone, and foreground location requests are attempted.
 
 **GreeLogix** — Flutter, Laravel & AI Development Agency
 
-GreeLogix builds Flutter applications, Laravel backends, and AI-powered products,
-and maintains reusable packages that help developers build better software.
+GreeLogix is a senior software agency for startups, SMEs, nonprofits, and international teams who need AI products, custom web & mobile apps, Laravel & Flutter builds, and QA — delivered in weeks, not quarters.
 
 🌐 [https://greelogix.com](https://greelogix.com)\
 📩 [hello@greelogix.com](mailto:hello@greelogix.com)
