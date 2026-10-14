@@ -1,3 +1,7 @@
+## 0.0.5
+
+- Remove the README maintainer section and personal contact details.
+
 ## 0.0.4
 
 - Upgrade permission_handler to 13.0.2 and support current XML and lint packages.

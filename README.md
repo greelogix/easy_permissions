@@ -27,7 +27,7 @@ Requires Dart 3.11+ and Flutter 3.24+; use current stable Flutter for the exampl
 
     ```yaml
     dependencies:
-      easy_permissions_manager: ^0.0.4
+      easy_permissions_manager: ^0.0.5
     ```
 
 2.  Run `flutter pub get`.
@@ -197,11 +197,6 @@ The JSON configuration supports simple booleans or detailed objects.
 
 ## ❤️ Contributing
 Contributions are welcome! If you find a bug or want a feature, please open an issue.
-
-Maintained by [Greelogix](https://greelogix.com),
-[Bilal Imran (@bilalatgreelogix)](https://github.com/bilalatgreelogix),
-[bilal.imran@greelogix.com](mailto:bilal.imran@greelogix.com).
-Published under the verified `greelogix.com` publisher.
 
 Permission prompts remain controlled by the operating system and browser.
 macOS and Linux return unsupported results because permission_handler has no backend for them.
